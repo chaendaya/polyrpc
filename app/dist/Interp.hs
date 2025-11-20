@@ -23,7 +23,6 @@ data Value
   | VClosure Env [(String, Maybe Type, Location)] Expr  -- λ 클로저
   | VTAbs   [String] Expr Env
   | VLAbs   [String] Expr Env
-  | VAddr   Integer
   | VActorId ProcessId
   deriving (Show, Typeable, Data)
 

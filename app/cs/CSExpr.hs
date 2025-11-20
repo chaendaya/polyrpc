@@ -11,8 +11,6 @@ import CSType
 import qualified Expr as SE
 import Text.JSON.Generic
 
-import Control.Distributed.Process(ProcessId)
-
 data Expr =
     ValExpr Value
   | Let [BindingDecl] Expr
@@ -35,12 +33,9 @@ data Value =
   | Req Value Type Value
   | Call Value Type Value
   | GenApp Location Value Type Value
-
-  | Spawn (Maybe Value)
-  | ActorId ProcessId
-
+  
   -- Runtime values
-  -- | Addr Integer
+   | Addr Integer
   deriving (Show, Typeable, Data) -- Read
 
 data BindingDecl =
@@ -283,12 +278,10 @@ fvValue (UnitM v) = fvValue v
 fvValue (BindM bindingDecls expr) =
   (Set.unions (map (\(Binding _ _ _ expr) -> fvExpr expr) bindingDecls) `Set.union` fvExpr expr)
   `Set.difference` (Set.fromList (map (\(Binding _ x _ _) -> x) bindingDecls))
--- fvValue (Req left _ right) = fvValue left `Set.union` fvValue right
--- fvValue (Call left _ right) = fvValue left `Set.union` fvValue right
--- fvValue (GenApp _ left _ right) = fvValue left `Set.union` fvValue right
-fvValue (Spawn Nothing)      = Set.empty
-fvValue (Spawn (Just v))     = fvValue v
-fvValue (ActorId _)          = Set.empty
+fvValue (Req left _ right) = fvValue left `Set.union` fvValue right
+fvValue (Call left _ right) = fvValue left `Set.union` fvValue right
+fvValue (GenApp _ left _ right) = fvValue left `Set.union` fvValue right
+
 
 --
 singleBindM (BindM [] expr) = expr
