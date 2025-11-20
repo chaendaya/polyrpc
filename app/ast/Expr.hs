@@ -65,6 +65,9 @@ data Expr =
   | Prim PrimOp [Location] [Type] [Expr]
   | Lit Literal
   | Constr String [Location] [Type] [Expr] [Type]
+
+  | Spawn (Maybe Expr)
+  | Exports [BindingDecl]
 -- For aeson
 --  deriving (Show, Generic)
   deriving (Show, Typeable, Data)

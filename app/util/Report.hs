@@ -37,14 +37,31 @@ sizeToplevels [] = 0
 sizeToplevels (SE.BindingTopLevel bind:toplevels) = sizeBinds [bind] + sizeToplevels toplevels
 sizeToplevels (_:toplevels) = sizeToplevels toplevels
 
--- | Closure size
-reportCloSize :: TE.FunctionStore -> (Int, Int, [(Int,Int)])  -- only locs, locs+fvs, list
-reportCloSize funStore = ( sum $ map fst sizes, sum $ map fst sizes ++ map snd sizes, sizes )
-  where sizes = cloSize funStore
+-- -- | Closure size
+-- reportCloSize :: TE.FunctionStore -> (Int, Int, [(Int,Int)])  -- only locs, locs+fvs, list
+-- reportCloSize funStore = ( sum $ map fst sizes, sum $ map fst sizes ++ map snd sizes, sizes )
+--   where sizes = cloSize funStore
         
 
-cloSize funStore = cloFunMap (TE._clientstore funStore) ++ cloFunMap (TE._serverstore funStore)
+-- cloSize funStore = cloFunMap (TE._funstore funStore)
 
+-- cloFunMap [] = []
+-- cloFunMap ((f,(_,TE.Code locs _ fvs _)):funMap) = [(length locs, length fvs)] ++ cloFunMap funMap
+
+-- | Closure size
+reportCloSize :: TE.FunctionStore -> (Int, Int, [(Int,Int)])
+reportCloSize funStore =
+  let sizes      = cloSize funStore
+      onlyLocs   = sum (map fst sizes)
+      locsAndFvs = sum (map fst sizes ++ map snd sizes)
+  in (onlyLocs, locsAndFvs, sizes)
+
+cloSize :: TE.FunctionStore -> [(Int, Int)]
+cloSize funStore = cloFunMap (TE._funstore funStore)
+  -- ↑ 이 이름은 CSExpr 쪽 실제 필드 이름에 맞춰주세요
+
+-- TE.FunctionMap ~ [(Int, (String, CSType.CodeType, TE.Code))]
+cloFunMap :: TE.FunctionMap -> [(Int, Int)]
 cloFunMap [] = []
-cloFunMap ((f,(_,TE.Code locs _ fvs _)):funMap) = [(length locs, length fvs)] ++ cloFunMap funMap
-
+cloFunMap ((_, (_, _, TE.Code locs _ fvs _)) : rest) =
+  (length locs, length fvs) : cloFunMap rest

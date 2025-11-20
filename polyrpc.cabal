@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: bad63b0ab28e10e0e15677d7878de044dda3d6517bff7ec734b22bab16fad928
+-- hash: 7f7ff2f95c547cc212561bb0923e1f5c78c443d97958b07571d79cda5909f83d
 
 name:           polyrpc
 version:        0.3
@@ -53,16 +53,18 @@ library
     , yapb >=0.2.6
   default-language: Haskell2010
 
-executable polyrpc
+executable polyrpc-dist
   main-is: Main.hs
   other-modules:
       Compile
       Execute
+      Expr2
       Lexer
       Monomorphization
       Parser
       ParserBidi
       ParserBidiLinks
+      PolyPipeline
       Simpl
       Token
       TypeCheck
@@ -84,12 +86,13 @@ executable polyrpc
       CSExpr
       CSSubst
       CSType
-      CodeGen
-      Runtime
       Report
       Util
       SyntaxCompletion
       SyntaxCompletionSpec
+      Interp
+      NodeRegistry
+      SystemMessage
       Paths_polyrpc
   hs-source-dirs:
       app
@@ -100,20 +103,28 @@ executable polyrpc
       app/codegen
       app/util
       app/syncomp
+      app/dist
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson >=1.4.7 && <1.5
     , aeson-pretty >=0.8.8 && <0.9
     , base >=4.7 && <5
+    , binary
     , bytestring
     , containers >=0.6.0 && <0.7
+    , distributed-process
     , hspec
     , json ==0.10.*
-    , mtl >=2.2.2 && <=2.2.2
+    , mtl
+    , network-transport
+    , network-transport-tcp
+    , polyrpc
     , pretty >=1.1.3 && <1.2
     , prettyprinter >=1.6.2 && <=1.7.0
+    , random
     , regex-tdfa
     , simple-cabal >=0.1.2 && <=0.1.3
+    , stm
     , transformers >=0.5.6.2 && <=0.5.6.2
     , unordered-containers >=0.2.10.0 && <=0.2.12.0
     , utility-ht >=0.0.15 && <=0.0.15
@@ -126,12 +137,14 @@ test-suite polyrpc-test
   other-modules:
       Compile
       Execute
+      Expr2
       Lexer
       Main
       Monomorphization
       Parser
       ParserBidi
       ParserBidiLinks
+      PolyPipeline
       Simpl
       Token
       TypeCheck
@@ -153,8 +166,6 @@ test-suite polyrpc-test
       CSExpr
       CSSubst
       CSType
-      CodeGen
-      Runtime
       Report
       Util
       SyntaxCompletion

@@ -334,25 +334,39 @@ compExpr s_gti env loc s_ty funStore (SE.Case expr (Just case_ty) alts) = do
 compExpr s_gti env loc s_ty funStore (SE.Case expr maybe alternatives) = do
   error $ "[compExpr] No case expression type: " ++ show (SE.Case expr maybe alternatives)
 
+-- compExpr s_gti env loc s_ty funStore (SE.App left (Just (ST.FunType argty locfun resty)) right maybeLoc) = do
+--    let ([f,x], funStore1) = TE.newVars 2 funStore
+--    (funStore2, target_left) <- compExpr s_gti env loc (ST.FunType argty locfun resty) funStore1 left
+--    (funStore3, target_right) <- compExpr s_gti env loc argty funStore2 right
+--    target_funty <- compValType (ST.FunType argty locfun resty)
+--    target_argty <- compValType argty
+--    let app = if loc==locfun then
+--                 TE.App (TE.Var f) target_funty (TE.Var x)
+--              else if loc==clientLoc && locfun==serverLoc then
+--                 TE.ValExpr $ TE.Req (TE.Var f) target_funty (TE.Var x)
+--              else if loc==serverLoc && locfun==clientLoc then
+--                 TE.ValExpr $ TE.Call (TE.Var f) target_funty (TE.Var x)
+--              else
+--                 TE.ValExpr $ TE.GenApp locfun (TE.Var f) target_funty (TE.Var x)
+--    return (funStore3,
+--            TE.ValExpr $ TE.BindM [TE.Binding False f target_funty target_left]
+--                           (TE.ValExpr
+--                             (TE.BindM [TE.Binding False x target_argty target_right]
+--                              app)))
 compExpr s_gti env loc s_ty funStore (SE.App left (Just (ST.FunType argty locfun resty)) right maybeLoc) = do
-   let ([f,x], funStore1) = TE.newVars 2 funStore
-   (funStore2, target_left) <- compExpr s_gti env loc (ST.FunType argty locfun resty) funStore1 left
-   (funStore3, target_right) <- compExpr s_gti env loc argty funStore2 right
-   target_funty <- compValType (ST.FunType argty locfun resty)
-   target_argty <- compValType argty
-   let app = if loc==locfun then
-                TE.App (TE.Var f) target_funty (TE.Var x)
-             else if loc==clientLoc && locfun==serverLoc then
-                TE.ValExpr $ TE.Req (TE.Var f) target_funty (TE.Var x)
-             else if loc==serverLoc && locfun==clientLoc then
-                TE.ValExpr $ TE.Call (TE.Var f) target_funty (TE.Var x)
-             else
-                TE.ValExpr $ TE.GenApp locfun (TE.Var f) target_funty (TE.Var x)
-   return (funStore3,
-           TE.ValExpr $ TE.BindM [TE.Binding False f target_funty target_left]
-                          (TE.ValExpr
-                            (TE.BindM [TE.Binding False x target_argty target_right]
-                             app)))
+  let ([f,x], funStore1) = TE.newVars 2 funStore
+  (funStore2, target_left)  <- compExpr s_gti env loc (ST.FunType argty locfun resty) funStore1 left
+  (funStore3, target_right) <- compExpr s_gti env loc argty                        funStore2 right
+  target_funty <- compValType (ST.FunType argty locfun resty)
+  target_argty <- compValType argty
+  return
+    ( funStore3
+    , TE.ValExpr $
+        TE.BindM [TE.Binding False f target_funty  target_left]
+        (TE.ValExpr $
+          TE.BindM [TE.Binding False x target_argty target_right]
+            (TE.App (TE.Var f) target_funty (TE.Var x)))
+    )
 
 compExpr s_gti env loc s_ty funStore (SE.App left Nothing right maybeLoc) = do
    error $ "[compExpr] App"
@@ -411,6 +425,23 @@ compExpr s_gti env loc s_ty funStore (SE.Prim primop op_locs op_tys exprs) = do
 
     [] -> error $ "[compExpr] Not found Prim " ++ show primop
 
+compExpr s_gti env loc s_ty funStore (SE.Spawn maybeExpr) = do
+  case maybeExpr of
+    Nothing -> 
+      -- 그냥 프로세스 하나 띄우는 형태
+      return (funStore, TE.ValExpr (TE.Spawn Nothing))
+    Just e -> do
+      -- e를 평소처럼 컴파일
+      let (x, fs1) = TE.newVar funStore
+      (fs2, t_e) <- compExpr s_gti env loc s_ty fs1 e
+      t_ty <- compValType s_ty
+      -- 그리고 spawn 값으로 감싼다
+      return
+        ( fs2
+        , TE.ValExpr $
+            TE.BindM [TE.Binding False x t_ty t_e]
+              (TE.ValExpr (TE.Spawn (Just (TE.Var x))))
+        )
 
 -----------
 -- compAlts
@@ -454,33 +485,42 @@ compAlt s_gti env loc substLoc substTy tycondecls externTys s_ty funStore (SE.Tu
 -- Utility shared by compExpr(SE.TypeAbs), compExpr(SE.LocAbs), compExpr(SE.Abs)
 --
 mkClosure env loc funStore target_ty opencode = do
-  let (fname,funStore1) = TE.newName funStore
+  -- 이름은 예전처럼 하나 뽑아둔다 (CodeName 이 아직 String 을 쓰니까)
+  let (fname, funStore1) = TE.newName funStore
+
   let locvars = SE._locVarEnv env
   let tyvars  = SE._typeVarEnv env
 
-  -- let (_freevars, _freetys) = unzip $ SE._varEnv env
-
+  -- free vars 뽑기
   let freevars = Set.toList (TE.fvOpenCode opencode)
-  let freetys = [ty | x <- freevars
-                    , let ty = case List.lookup x (SE._varEnv env) of
-                                 Just ty -> ty
-                                 Nothing -> error $ "[mkClosure] freetys: not found "
-                                              ++ x  ++ " in " ++ fname ++ "\n"
-                                              ++ show opencode ++ "\n"
-                                              ++ show freevars ++ "\n"
-                                              ++ show (SE._varEnv env)]
+  let freetys =
+        [ ty
+        | x <- freevars
+        , let ty = case List.lookup x (SE._varEnv env) of
+                     Just ty' -> ty'
+                     Nothing  -> error $ "[mkClosure] freetys: not found "
+                                          ++ x  ++ " in " ++ fname ++ "\n"
+                                          ++ show opencode ++ "\n"
+                                          ++ show freevars ++ "\n"
+                                          ++ show (SE._varEnv env)
+        ]
 
-  let target_freevars = map TE.Var freevars
-
-
+  -- free var 들의 타입은 surface → CS 로 변환
   target_freetys <- mapM compValType freetys
-  let codename = TE.CodeName fname (map LocVar locvars) (map TT.TypeVarType tyvars)
+
+  -- 여기서 target_ty 는 이미 TT.Type 이므로 변환하지 않는다!
   let codety = TT.CodeType locvars tyvars target_freetys target_ty
-  let code = TE.Code locvars tyvars freevars opencode
+  let code   = TE.Code     locvars tyvars freevars opencode
 
-  let funStore2 = TE.addFun loc funStore1 fname codety code
+  -- 새 시그니처: 이름은 안 주고 (store, codety, code) 만 준다
+  let (funStore2, _fid) = TE.addFun funStore1 codety code
+
+  -- CodeName 은 여전히 String 이름을 쓴다
+  let codename = TE.CodeName fname (map LocVar locvars) (map TT.TypeVarType tyvars)
+
+  -- 실제 클로저 값 만들기 (freevars 는 값으로)
+  let target_freevars = map TE.Var freevars
   return (funStore2, TE.Closure target_freevars target_freetys codename [])
-
 --
 noDupAppend xs [] = xs
 noDupAppend xs (y:ys) =

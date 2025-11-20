@@ -101,16 +101,16 @@ doSubstValue subst (BindM bindingDecls expr) =
         ) (subst, []) bindingDecls
   in  BindM bindingDecls1 (doSubstExpr subst1 expr)
 
-doSubstValue subst (Req f funty arg) =
-  Req (doSubstValue subst f) funty (doSubstValue subst arg)
+-- doSubstValue subst (Req f funty arg) =
+--   Req (doSubstValue subst f) funty (doSubstValue subst arg)
 
-doSubstValue subst (Call f funty arg) =
-  Call (doSubstValue subst f) funty (doSubstValue subst arg)
+-- doSubstValue subst (Call f funty arg) =
+--   Call (doSubstValue subst f) funty (doSubstValue subst arg)
 
-doSubstValue subst (GenApp loc f funty arg) =
-  GenApp loc (doSubstValue subst f) funty (doSubstValue subst arg)
+-- doSubstValue subst (GenApp loc f funty arg) =
+--   GenApp loc (doSubstValue subst f) funty (doSubstValue subst arg)
 
-doSubstValue subst (Addr i) = Addr i
+-- doSubstValue subst (Addr i) = Addr i
 
 --doSubstValue subst v = error $ "[doSubstValue] Unexpected: " ++ show v
 
@@ -195,23 +195,23 @@ doSubstLocValue substLoc (BindM bindingDecls expr) =
                  (doSubstLocExpr substLoc bexpr))) bindingDecls
   in  BindM bindingDecls1 (doSubstLocExpr substLoc expr)
 
-doSubstLocValue substLoc (Req f funty arg) =
-  Req (doSubstLocValue substLoc f)
-        (doSubstLoc substLoc funty)
-          (doSubstLocValue substLoc arg)
+-- doSubstLocValue substLoc (Req f funty arg) =
+--   Req (doSubstLocValue substLoc f)
+--         (doSubstLoc substLoc funty)
+--           (doSubstLocValue substLoc arg)
 
-doSubstLocValue substLoc (Call f funty arg) =
-  Call (doSubstLocValue substLoc f)
-         (doSubstLoc substLoc funty)
-           (doSubstLocValue substLoc arg)
+-- doSubstLocValue substLoc (Call f funty arg) =
+--   Call (doSubstLocValue substLoc f)
+--          (doSubstLoc substLoc funty)
+--            (doSubstLocValue substLoc arg)
 
-doSubstLocValue substLoc (GenApp loc f funty arg) =
-  GenApp (doSubstLocOverLocs substLoc loc)
-           (doSubstLocValue substLoc f)
-             (doSubstLoc substLoc funty)
-             (doSubstLocValue substLoc arg)
+-- doSubstLocValue substLoc (GenApp loc f funty arg) =
+--   GenApp (doSubstLocOverLocs substLoc loc)
+--            (doSubstLocValue substLoc f)
+--              (doSubstLoc substLoc funty)
+--              (doSubstLocValue substLoc arg)
 
-doSubstLocValue substLoc (Addr i) = Addr i
+-- doSubstLocValue substLoc (Addr i) = Addr i
 
 --
 doSubstTyExpr :: [(String,Type)] -> Expr -> Expr
@@ -281,15 +281,15 @@ doSubstTyValue substTy (BindM bindingDecls expr) =
   in  BindM bindingDecls1 (doSubstTyExpr substTy expr)
 
 
-doSubstTyValue substTy (Req f funty arg) =
-  Req (doSubstTyValue substTy f) (doSubst substTy funty) (doSubstTyValue substTy arg)
+-- doSubstTyValue substTy (Req f funty arg) =
+--   Req (doSubstTyValue substTy f) (doSubst substTy funty) (doSubstTyValue substTy arg)
 
-doSubstTyValue substTy (Call f funty arg) =
-  Call (doSubstTyValue substTy f) (doSubst substTy funty) (doSubstTyValue substTy arg)
+-- doSubstTyValue substTy (Call f funty arg) =
+--   Call (doSubstTyValue substTy f) (doSubst substTy funty) (doSubstTyValue substTy arg)
 
-doSubstTyValue substTy (GenApp loc f funty arg) =
-  GenApp loc (doSubstTyValue substTy f) (doSubst substTy funty) (doSubstTyValue substTy arg)
+-- doSubstTyValue substTy (GenApp loc f funty arg) =
+--   GenApp loc (doSubstTyValue substTy f) (doSubst substTy funty) (doSubstTyValue substTy arg)
 
-doSubstTyValue substTy (Addr i) = Addr i
+-- doSubstTyValue substTy (Addr i) = Addr i
 
 --

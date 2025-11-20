@@ -11,6 +11,8 @@ import CSType
 import qualified Expr as SE
 import Text.JSON.Generic
 
+import Control.Distributed.Process(ProcessId)
+
 data Expr =
     ValExpr Value
   | Let [BindingDecl] Expr
@@ -19,7 +21,7 @@ data Expr =
   | TypeApp Value Type [Type]
   | LocApp Value Type [Location]
   | Prim PrimOp [Location] [Type] [Value]
-  deriving (Read, Show, Typeable, Data)
+  deriving (Show, Typeable, Data) -- Read
 
 data Value =
     Var String
@@ -34,20 +36,23 @@ data Value =
   | Call Value Type Value
   | GenApp Location Value Type Value
 
+  | Spawn (Maybe Value)
+  | ActorId ProcessId
+
   -- Runtime values
-  | Addr Integer
-  deriving (Read, Show, Typeable, Data)
+  -- | Addr Integer
+  deriving (Show, Typeable, Data) -- Read
 
 data BindingDecl =
     Binding Bool String Type Expr    -- isTop?
-    deriving (Read, Show, Typeable, Data)
+    deriving (Show, Typeable, Data) -- Read
 
 
 data DataTypeDecl =
     DataType String [String] [TypeConDecl]
 -- For aeson
 --  deriving (Show, Generic)
-    deriving (Read, Show, Typeable, Data)
+    deriving (Show, Typeable, Data) -- Read
 
 data TopLevelDecl =
     BindingTopLevel BindingDecl
@@ -55,33 +60,33 @@ data TopLevelDecl =
   | LibDeclTopLevel String Type
 -- For aeson
 --  deriving (Show, Generic)
-    deriving (Read, Show, Typeable, Data)
+    deriving (Show, Typeable, Data) -- Read
 
 data TypeConDecl =
    TypeCon String [Type]
 -- For aeson
 --  deriving (Show, Generic)
-    deriving (Read, Show, Typeable, Data)
+    deriving (Show, Typeable, Data)
 
 data Alternative =
     Alternative String [String] Expr
   | TupleAlternative [String] Expr
-  deriving (Read, Show, Typeable, Data)
+  deriving (Show, Typeable, Data)
 
 data Code =
     Code [String] [String] [String] OpenCode  -- [loc]. [alpha]. [x]. OpenCode
-    deriving (Read, Show, Typeable, Data)
+    deriving (Show, Typeable, Data)
 
 data OpenCode =
     CodeAbs     [(String, Type)] Expr
 --  | CodeTypeAbs [String] Expr
   | CodeLocAbs  [String] Expr
-  deriving (Read, Show, Typeable, Data)
+  deriving (Show, Typeable, Data)
 
 
 data CodeName =
     CodeName String [Location] [Type]
-    deriving (Read, Show, Typeable, Data)
+    deriving (Show, Typeable, Data)
 
 getCodeName (CodeName name _ _) = name
 
@@ -114,32 +119,43 @@ data Env = Env
 initEnv = Env { _locVarEnv=[], _typeVarEnv=[], _varEnv=[] }
 
 --
-type FunctionMap = [(String, (CodeType, Code))]
+type FunctionMap = [(Int, (String, CodeType, Code))]
 
+-- data FunctionStore = FunctionStore
+--    { _clientstore :: FunctionMap
+--    , _serverstore :: FunctionMap
+--    , _new   :: Int
+--    }
+--    deriving (Show, Typeable, Data)
 data FunctionStore = FunctionStore
-   { _clientstore :: FunctionMap
-   , _serverstore :: FunctionMap
-   , _new   :: Int
+   { _funstore :: FunctionMap
+   , _new      :: Int
    }
    deriving (Show, Typeable, Data)
 
-addClientFun :: FunctionStore -> String -> CodeType -> Code -> FunctionStore
-addClientFun fnstore name ty code =
-   fnstore {_clientstore = _clientstore fnstore ++ [(name,(ty,code))] }
+-- addClientFun :: FunctionStore -> String -> CodeType -> Code -> FunctionStore
+-- addClientFun fnstore name ty code =
+--    fnstore {_clientstore = _clientstore fnstore ++ [(name,(ty,code))] }
 
-addServerFun :: FunctionStore -> String -> CodeType -> Code -> FunctionStore
-addServerFun fnstore name ty code =
-   fnstore {_serverstore = (_serverstore fnstore) ++ [(name,(ty,code))] }
+-- addServerFun :: FunctionStore -> String -> CodeType -> Code -> FunctionStore
+-- addServerFun fnstore name ty code =
+--    fnstore {_serverstore = (_serverstore fnstore) ++ [(name,(ty,code))] }
 
-addFun :: Location -> FunctionStore -> String -> CodeType -> Code -> FunctionStore
-addFun loc funstore name ty@(CodeType [] [] fvtys (FunType _ funloc _)) code =
-  if isClient funloc then addClientFun funstore name ty code
-  else if isServer funloc then addServerFun funstore name ty code
-  else addServerFun (addClientFun funstore name ty code) name ty code
-addFun loc funstore name ty@(CodeType [] [] fvtys somety) code =
-  addServerFun (addClientFun funstore name ty code) name ty code
-addFun loc funstore name ty@(CodeType locvars tyvars fvtys somety) code =
-  addServerFun (addClientFun funstore name ty code) name ty code
+-- addFun :: Location -> FunctionStore -> String -> CodeType -> Code -> FunctionStore
+-- addFun loc funstore name ty@(CodeType [] [] fvtys (FunType _ funloc _)) code =
+--   if isClient funloc then addClientFun funstore name ty code
+--   else if isServer funloc then addServerFun funstore name ty code
+--   else addServerFun (addClientFun funstore name ty code) name ty code
+-- addFun loc funstore name ty@(CodeType [] [] fvtys somety) code =
+--   addServerFun (addClientFun funstore name ty code) name ty code
+-- addFun loc funstore name ty@(CodeType locvars tyvars fvtys somety) code =
+--   addServerFun (addClientFun funstore name ty code) name ty code
+addFun :: FunctionStore -> CodeType -> Code -> (FunctionStore, Int)
+addFun fs ty code =
+  let n = _new fs
+  in (fs { _funstore = _funstore fs ++ [(n, ( "csF_" ++ show n, ty, code))], _new = n+1 }
+     , n)
+
 
 newName :: FunctionStore -> (String, FunctionStore)
 newName fnstore = let n = _new fnstore in ("csF_" ++ show n, fnstore{_new =n+1})
@@ -154,11 +170,16 @@ newVars n funStore =
         (xs, funStore2) = newVars (n-1) funStore1
     in  (x:xs, funStore2)
 
+-- initFunctionStore = FunctionStore
+--    { _clientstore=[]
+--    , _serverstore=[]
+--    , _new        = 1
+--    }
+initFunctionStore :: FunctionStore
 initFunctionStore = FunctionStore
-   { _clientstore=[]
-   , _serverstore=[]
-   , _new        = 1
-   }
+  { _funstore = []
+  , _new      = 1
+  }
 
 --
 -- Need to fix: the duplicate declarations, primOpTypes and lookupPrimOpType.
@@ -262,10 +283,12 @@ fvValue (UnitM v) = fvValue v
 fvValue (BindM bindingDecls expr) =
   (Set.unions (map (\(Binding _ _ _ expr) -> fvExpr expr) bindingDecls) `Set.union` fvExpr expr)
   `Set.difference` (Set.fromList (map (\(Binding _ x _ _) -> x) bindingDecls))
-fvValue (Req left _ right) = fvValue left `Set.union` fvValue right
-fvValue (Call left _ right) = fvValue left `Set.union` fvValue right
-fvValue (GenApp _ left _ right) = fvValue left `Set.union` fvValue right
-
+-- fvValue (Req left _ right) = fvValue left `Set.union` fvValue right
+-- fvValue (Call left _ right) = fvValue left `Set.union` fvValue right
+-- fvValue (GenApp _ left _ right) = fvValue left `Set.union` fvValue right
+fvValue (Spawn Nothing)      = Set.empty
+fvValue (Spawn (Just v))     = fvValue v
+fvValue (ActorId _)          = Set.empty
 
 --
 singleBindM (BindM [] expr) = expr

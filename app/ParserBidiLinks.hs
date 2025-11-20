@@ -298,6 +298,12 @@ parserSpec = ParserSpec
               in
               toASTBindingDecl (Binding False (getText rhs 1) locAbsTy lexpr)),
 
+      rule "Binding -> identifier = LExpr"
+        (\rhs -> return $
+          let lexpr = fromASTExpr (get rhs 3)
+              dummyTy = TypeVarType "_dummy"
+          in
+          toASTBindingDecl (Binding False (getText rhs 1) dummyTy lexpr) ),
 
       {- Bindings -}
       rule "Bindings -> Binding"
@@ -517,7 +523,14 @@ parserSpec = ParserSpec
 
       rule "Term -> ( )" (\rhs -> return $ toASTExpr (Lit UnitLit) ),
 
-      rule "Term -> ( LExpr )" (\rhs -> return $ get rhs 2 )
+      rule "Term -> ( LExpr )" (\rhs -> return $ get rhs 2 ),
+
+      rule "Term -> spawn ( )" (\rhs -> return $ toASTExpr (Spawn Nothing) ),
+
+      rule "Term -> spawn ( { Bindings } )"
+        (\rhs -> let binds = fromASTBindingDeclSeq (get rhs 4)
+                in return $ toASTExpr (Spawn (Just (Exports binds))))
+
     ],
 
     baseDir = "./",
