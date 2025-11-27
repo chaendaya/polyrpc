@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, DeriveAnyClass #-}
 
 module Location where
 
@@ -13,10 +13,13 @@ import Data.Text.Prettyprint.Doc hiding (Pretty)
 import Naming
 import Pretty hiding (pretty)
 
+import GHC.Generics (Generic)
+import Data.Binary (Binary)
+
 data Location =
     Location String
   | LocVar LocationVar
-  deriving (Eq, Read, Show, Typeable, Data)
+  deriving (Eq, Read, Show, Typeable, Data, Generic, Binary)
 
 equalLoc (Location x) (Location y) = x==y
 equalLoc (LocVar x) (LocVar y) = x==y
@@ -27,6 +30,10 @@ equalLocs (l1:locs1) (l2:locs2) = equalLoc l1 l2 && equalLocs locs1 locs2
 equalLocs _ _ = False
 
 type LocationVar = String
+
+locNameOf :: Location -> String
+locNameOf (Location s) = s
+locNameOf (LocVar v)   = v
 
 -- unifyLocations [] [] = Just []
 -- unifyLocations (loc1:locs1) (loc2:locs2) =

@@ -1,8 +1,9 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, DeriveAnyClass #-}
 
 module Prim where
 
 import GHC.Generics hiding (Prefix, Infix)
+import Data.Binary (Binary)
 import Text.JSON.Generic
 
 import Data.Text.Prettyprint.Doc hiding (Pretty)
@@ -43,7 +44,7 @@ data PrimOp =
   -- | MkRecOp  -- MkRecOp closure f 
 -- For aeson  
 --  deriving (Show, Eq, Generic)
-  deriving (Eq, Read, Show, Typeable, Data, Generic)
+  deriving (Eq, Read, Show, Typeable, Data, Generic, Binary)
 
 data Fixity = Prefix | Infix | Postfix deriving Show
 

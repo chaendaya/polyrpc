@@ -41,22 +41,49 @@ library:
   source-dirs: src
 
 executables:
-  polyrpc:
+  # polyrpc:
+  #   main:                PolyPipeline.hs
+  #   source-dirs:
+  #   - app
+  #   - app/ast
+  #   - app/surface
+  #   - app/bidi
+  #   - app/cs
+  #   - app/codegen
+  #   - app/util
+  #   - app/syncomp
+
+  #   ghc-options:
+  #   - -threaded
+  #   - -rtsopts
+  #   - -with-rtsopts=-N
+
+  polyrpc-dist:
     main:                Main.hs
     source-dirs:
-    - app
-    - app/ast
-    - app/surface
-    - app/bidi
-    - app/cs
-    - app/codegen
-    - app/util
-    - app/syncomp
-
+      - app
+      - app/ast
+      - app/surface
+      - app/bidi
+      - app/cs
+      - app/codegen
+      - app/util
+      - app/syncomp
+      - app/dist
     ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies:
+      - polyrpc
+      - bytestring
+      - distributed-process
+      - network-transport
+      - network-transport-tcp
+      - binary
+      - mtl
+      - random
+      - stm
 
 tests:
   polyrpc-test:

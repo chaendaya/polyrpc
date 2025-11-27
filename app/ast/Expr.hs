@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, DeriveAnyClass #-}
 
 module Expr(Expr(..), ExprVar, AST(..), BindingDecl(..), DataTypeDecl(..)
   , initEnv
@@ -45,6 +45,9 @@ import Text.JSON.Generic
 import Pretty hiding (pretty)
 import Util
 
+import GHC.Generics (Generic)
+import Data.Binary (Binary)
+
 import Data.Char
 import Data.List (lookup)
 import Data.Text.Prettyprint.Doc hiding (Pretty)
@@ -65,9 +68,12 @@ data Expr =
   | Prim PrimOp [Location] [Type] [Expr]
   | Lit Literal
   | Constr String [Location] [Type] [Expr] [Type]
+
+  | Spawn (Maybe Expr)
+  | Exports [BindingDecl]
 -- For aeson
 --  deriving (Show, Generic)
-  deriving (Show, Typeable, Data)
+  deriving (Show, Typeable, Data, Generic, Binary)
 
 --------------------------------------------------------------------
 -- On location annotations:
@@ -84,6 +90,7 @@ data Expr =
 type ExprVar = String
 
 --
+isTypeVar :: [Char] -> Bool
 isTypeVar s = null s == False && isLower (head s)
 
 isTypeConr s  = null s == False && isUpper (head s)
@@ -156,7 +163,7 @@ data BindingDecl =
     Binding Bool ExprVar Type Expr -- isTop?
 -- For aeson
 --  deriving (Show, Generic)
-    deriving (Show, Typeable, Data)
+    deriving (Show, Typeable, Data, Generic, Binary)
 
 setTop :: BindingDecl -> BindingDecl
 setTop (Binding _ x ty expr) = Binding True x ty expr
@@ -186,7 +193,7 @@ data TypeConDecl =
 data Alternative =
     Alternative String [String] Expr
   | TupleAlternative [String] Expr
-  deriving (Show, Typeable, Data)
+  deriving (Show, Typeable, Data, Generic, Binary)
 
 --
 -- For aeson

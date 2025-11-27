@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 
 module Execute where
 
@@ -56,6 +57,7 @@ execute debug gti funStore mainExpr = do
   v <- run debug funStore (initConfig mainExpr)
   return v
 
+assert :: Monad m => Bool -> m () -> m ()
 assert b action = if b then action else return ()
 
 --

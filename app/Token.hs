@@ -32,6 +32,7 @@ data Token =
   | KEYWORD_CASE_TOKEN
   | KEYWORD_OR_TOKEN
   | KEYWORD_AND_TOKEN
+  | KEYWORD_SPAWN_TOKEN   -- spawn
   | AT_TOKEN
   | ALT_ARROW_TOKEN
   | NOT_TOKEN
@@ -87,6 +88,7 @@ tokenStrList =
     (KEYWORD_CASE_TOKEN, "case"),
     (KEYWORD_OR_TOKEN, "or"),
     (KEYWORD_AND_TOKEN, "and"),
+    (KEYWORD_SPAWN_TOKEN, "spawn"),   -- spawn
     (AT_TOKEN, "@"),
     (ALT_ARROW_TOKEN, "=>"),
     (NOT_TOKEN, "!"),

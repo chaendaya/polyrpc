@@ -81,12 +81,12 @@ parserSpec = ParserSpec
 
 
       {- Location -}
-      rule "Location -> identifier" (\rhs -> return $ toASTLocation (locOrVar (getText rhs 1)) ),
+      rule "Location -> identifier" (\rhs -> return $ toASTLocation (LocVar (getText rhs 1)) ),
 
 
       {- Locations -}
       rule "Locations -> Identifiers" (\rhs -> return $
-        toASTLocationSeq (map locOrVar (fromASTIdSeq (get rhs 1))) ),
+        toASTLocationSeq (map LocVar (fromASTIdSeq (get rhs 1))) ),
 
 
       {- Type -}
@@ -118,14 +118,14 @@ parserSpec = ParserSpec
 
       rule "FunType -> AppType -> FunType" (\rhs -> return $
           let locName = Surface.noLocName
-          in  toASTType (FunType (fromASTType (get rhs 1)) (locOrVar locName) (fromASTType (get rhs 3))) ),
+          in  toASTType (FunType (fromASTType (get rhs 1)) (LocVar locName) (fromASTType (get rhs 3))) ),
 
       rule "FunType -> AppType locFun FunType" (\rhs -> return $
           let locfun = getText rhs 2
               locName = init (init (tail locfun))  -- extract Loc from -Loc-> ( a bit hard-coded!!)
           in  toASTType (FunType
                           (fromASTType (get rhs 1))
-                          (locOrVar locName)
+                          (LocVar locName)
                           (fromASTType (get rhs 3))) ),
 
       {- AppType -}
@@ -298,6 +298,12 @@ parserSpec = ParserSpec
               in
               toASTBindingDecl (Binding False (getText rhs 1) locAbsTy lexpr)),
 
+      rule "Binding -> identifier = LExpr"
+        (\rhs -> return $
+          let lexpr = fromASTExpr (get rhs 3)
+              dummyTy = TypeVarType "_dummy"
+          in
+          toASTBindingDecl (Binding False (getText rhs 1) dummyTy lexpr) ),
 
       {- Bindings -}
       rule "Bindings -> Binding"
@@ -399,7 +405,7 @@ parserSpec = ParserSpec
       --  Expr -> Expr [ LocFunTypes ]
 
       rule "Expr -> Expr { Identifiers }"
-        (\rhs -> return $ toASTExpr (singleLocApp (LocApp (fromASTExpr (get rhs 1)) Nothing (map locOrVar (fromASTIdSeq (get rhs 3))))) ),
+        (\rhs -> return $ toASTExpr (singleLocApp (LocApp (fromASTExpr (get rhs 1)) Nothing (map LocVar (fromASTIdSeq (get rhs 3))))) ),
 
       rule "Expr -> Tuple" (\rhs -> return $ get rhs 1 ),
 
@@ -517,7 +523,14 @@ parserSpec = ParserSpec
 
       rule "Term -> ( )" (\rhs -> return $ toASTExpr (Lit UnitLit) ),
 
-      rule "Term -> ( LExpr )" (\rhs -> return $ get rhs 2 )
+      rule "Term -> ( LExpr )" (\rhs -> return $ get rhs 2 ),
+
+      rule "Term -> spawn ( )" (\rhs -> return $ toASTExpr (Spawn Nothing) ),
+
+      rule "Term -> spawn ( Bindings )"
+        (\rhs -> let binds = fromASTBindingDeclSeq (get rhs 3)
+                in return $ toASTExpr (Spawn (Just (Exports binds))))
+
     ],
 
     baseDir = "./",
@@ -533,3 +546,4 @@ parserSpec = ParserSpec
                    pa_finishTime=finishTime
                  }
   }
+  

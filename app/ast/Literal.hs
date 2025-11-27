@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, DeriveAnyClass #-}
 
 module Literal where
 
@@ -7,6 +7,7 @@ import Text.JSON.Generic
 
 import qualified Data.Aeson as DA
 import GHC.Generics
+import Data.Binary (Binary)
 
 import Data.Text.Prettyprint.Doc hiding (Pretty)
 import Data.Text.Prettyprint.Doc.Util
@@ -18,7 +19,7 @@ data Literal =
   | UnitLit
 -- For aeson  
 --  deriving (Show, Generic)
-  deriving (Eq, Read, Show, Typeable, Data, Generic)
+  deriving (Eq, Read, Show, Typeable, Data, Generic, Binary)
 
 instance DA.FromJSON Literal
 instance DA.ToJSON Literal

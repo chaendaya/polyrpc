@@ -62,6 +62,7 @@ lexerSpec = LexerSpec
         ("case"    , mkFn KEYWORD_CASE_TOKEN),
         ("or"      , mkFn KEYWORD_OR_TOKEN),
         ("and"     , mkFn KEYWORD_AND_TOKEN),
+        ("spawn"   , mkFn KEYWORD_SPAWN_TOKEN), -- spawn
         ("forall"  , mkFn FORALL_TOKEN),
         ("exists"  , mkFn EXISTS_TOKEN),
         ("[a-zA-Z_][a-zA-Z0-9_]*"    , mkFn IDENTIFIER_TOKEN)

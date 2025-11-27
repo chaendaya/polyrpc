@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, DeriveAnyClass #-}
 
 module Type where
 
@@ -19,6 +19,9 @@ import Location
 import Data.Text.Prettyprint.Doc hiding (Pretty)
 import Data.Text.Prettyprint.Doc.Util
 
+import GHC.Generics (Generic)
+import Data.Binary (Binary)
+
 data Type =
     TypeVarType TypeVar
   | TupleType [Type]
@@ -26,7 +29,7 @@ data Type =
   | TypeAbsType [TypeVar] Type
   | LocAbsType [LocationVar] Type
   | ConType String [Location] [Type]
-  deriving (Show, Typeable, Data, Eq)
+  deriving (Show, Typeable, Data, Eq, Generic, Binary)
 
 type TypeVar = String
 
